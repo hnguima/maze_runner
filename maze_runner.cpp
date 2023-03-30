@@ -171,7 +171,6 @@ bool walk(pos_t pos)
 	// Repita até que a saída seja encontrada ou não existam mais posições não exploradas
 	// Marcar a posição atual com o símbolo '.'
 	maze[pos.i][pos.j] = 'c';
-
 	// Limpa a tela
 
 	// Imprime o labirinto

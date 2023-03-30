@@ -196,62 +196,149 @@ bool walk(pos_t pos)
 		return true;
 	}
 
-	bool bifurcate = false;
+	int next_pos[4] = {0};
 
 	if ((pos.j + 1) < num_cols && maze[pos.i][pos.j + 1] == 'x')
 	{
-		struct pos_t new_pos = {pos.i, pos.j + 1};
-
-		walk(new_pos);
-		bifurcate = true;
+		next_pos[0] = 1;
 	}
-
-	// std::thread thread_right, thread_down, thread_up;
-
 	if ((pos.j - 1) >= 0 && maze[pos.i][pos.j - 1] == 'x')
 	{
-		struct pos_t new_pos = {pos.i, pos.j - 1};
-
-		if (bifurcate == true)
-		{
-			std::thread thread_obj(walk, new_pos);
-		}
-		else
-		{
-			walk(new_pos);
-			bifurcate = true;
-		}
+		next_pos[1] = 1;
 	}
 	if ((pos.i + 1) < num_rows && maze[pos.i + 1][pos.j] == 'x')
 	{
-		struct pos_t new_pos = {pos.i + 1, pos.j};
-
-		if (bifurcate == true)
-		{
-			std::thread thread_obj(walk, new_pos);
-		}
-		else
-		{
-			walk(new_pos);
-			bifurcate = true;
-		}
+		next_pos[2] = 1;
 	}
 	if ((pos.i - 1) >= 0 && maze[pos.i - 1][pos.j] == 'x')
 	{
-		struct pos_t new_pos = {pos.i - 1, pos.j};
+		next_pos[3] = 1;
+	}
 
-		if (bifurcate == true)
+	// iterate through the positions
+	int available_paths = 0;
+	for (size_t i = 0; i < 4; i++)
+	{
+		available_paths += next_pos[i];
+	}
+
+	if (available_paths == 0)
+	{
+		return false;
+	}
+
+	if (available_paths == 1)
+	{
+		struct pos_t new_pos = {0};
+		if (next_pos[0] == 1)
 		{
-			std::thread thread_obj(walk, new_pos);
+			new_pos.i = pos.i;
+			new_pos.j = pos.j + 1;
 		}
-		else
+		else if (next_pos[1] == 1)
 		{
-			walk(new_pos);
-			bifurcate = true;
+			new_pos.i = pos.i;
+			new_pos.j = pos.j - 1;
+		}
+		else if (next_pos[2] == 1)
+		{
+			new_pos.i = pos.i + 1;
+			new_pos.j = pos.j;
+		}
+		else if (next_pos[3] == 1)
+		{
+			new_pos.i = pos.i - 1;
+			new_pos.j = pos.j;
+		}
+
+		update_maze(pos, new_pos);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		return walk(new_pos);
+	}
+
+	if (available_paths > 1)
+	{
+
+		std::thread t_left, t_right, t_down, t_up;
+		bool t_left_started = false, t_right_started = false, t_down_started = false, t_up_started = false;
+
+		if (next_pos[0] == 1)
+		{
+			// std::cout << "going left" << std::endl;
+
+			struct pos_t new_pos = {0};
+			new_pos.i = pos.i;
+			new_pos.j = pos.j + 1;
+
+			update_maze(pos, new_pos);
+			t_left = std::thread(walk, new_pos);
+
+			t_left_started = true;
+		}
+		if (next_pos[1] == 1)
+		{
+			// std::cout << "going right" << std::endl;
+
+			struct pos_t new_pos = {0};
+			new_pos.i = pos.i;
+			new_pos.j = pos.j - 1;
+
+			update_maze(pos, new_pos);
+			t_right = std::thread(walk, new_pos);
+
+			t_right_started = true;
+		}
+		if (next_pos[2] == 1)
+		{
+			// std::cout << "going down" << std::endl;
+			struct pos_t new_pos = {0};
+			new_pos.i = pos.i + 1;
+			new_pos.j = pos.j;
+
+			update_maze(pos, new_pos);
+			t_down = std::thread(walk, new_pos);
+
+			t_down_started = true;
+		}
+		if (next_pos[3] == 1)
+		{
+			// std::cout << "going up" << std::endl;
+			struct pos_t new_pos = {0};
+			new_pos.i = pos.i - 1;
+			new_pos.j = pos.j;
+
+			update_maze(pos, new_pos);
+			t_up = std::thread(walk, new_pos);
+
+			t_up_started = true;
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		if (t_left_started)
+		{
+			t_left.join();
+			// std::cout << "left joined" << std::endl;
+		}
+		if (t_right_started)
+		{
+			t_right.join();
+      // std::cout << "right joined" << std::endl;
+		}
+		if (t_down_started)
+		{
+			t_down.join();
+      // std::cout << "down joined" << std::endl;
+		}
+		if (t_up_started)
+		{
+			t_up.join();
+      // std::cout << "up joined" << std::endl;
 		}
 	}
 
-	// std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	return false;
 }
 
 int main(int argc, char *argv[])
